@@ -74,16 +74,27 @@ The system checks the participant's registration status before allowing entry. I
 * **OpenCV**
 * **PyZbar**
 
+Python Dependencies
+Streamlit – Used to create the interactive web application, dashboard, sidebar, forms, camera interface, file uploader, and other UI components.
+NumPy – Used to store and manipulate participant information in array format.
+Pandas – Used to create and format the participant database for display in the application.
+qrcode – Used to generate unique QR Codes for participants.
+Pillow – Used for handling QR Code image data.
+OpenCV – Used for image-processing operations associated with QR Code verification.
+PyZbar – Used to decode QR Codes and extract the participant ID.
+
+External System Dependency
+libzbar0 – A Linux system library required by PyZbar for QR Code and barcode decoding when the application is deployed on Streamlit Community Cloud.
+
 ## 📂 Project Structure
 
-```text
 Python-Workshop-Entry-Verification/
 │
 ├── app.py
 ├── functions.py
-├── requirements.txt
+├── requirements.txt, packages.txt
 └── README.md
-```
+
 
 ### `app.py`
 
@@ -102,6 +113,10 @@ Contains the main Python functions for:
 ### `requirements.txt`
 
 Contains the Python packages required to run the application.
+
+### `packages.txt`
+
+Contains external Linux packages required by the application.
 
 ## ⚙️ Installation
 
@@ -135,7 +150,7 @@ The application will open in your browser.
 
 ## 🔄 Application Workflow
 
-```text
+
 Participant Database
         ↓
 Select Participant
@@ -166,7 +181,7 @@ ENTRY ALLOWED   ENTRY DENIED
 Update Entry Status
        ↓
 Prevent Duplicate Entry
-```
+
 
 ## 🔐 Entry Verification Logic
 
