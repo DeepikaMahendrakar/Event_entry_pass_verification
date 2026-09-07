@@ -108,7 +108,7 @@ Contains the Python packages required to run the application.
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/DeepikaMahendrakar/Event_entry_pass_verification/tree/main
 ```
 
 ### 2. Open the project folder
