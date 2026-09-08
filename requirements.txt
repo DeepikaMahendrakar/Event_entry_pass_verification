@@ -2,6 +2,5 @@ streamlit
 numpy
 pandas
 qrcode[pil]
-Pillow
 opencv-python-headless
 pyzbar
