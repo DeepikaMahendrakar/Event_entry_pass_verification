@@ -1,104 +1,180 @@
 import cv2
 import numpy as np
 import qrcode
-from pyzbar.pyzbar import decode
 from PIL import Image
 from io import BytesIO
 
 
+# =====================================================
+# CREATE PARTICIPANTS
+# =====================================================
+
 def create_participants():
-    """Create the participant database as a NumPy array."""
-    return np.array([
+
+    """Create participant database."""
+
+    participants = np.array([
         ["E101", "Rahul", "Python Workshop", "Registered", "Not Entered"],
         ["E102", "Priya", "Python Workshop", "Registered", "Not Entered"],
-        ["E103", "Arjun", "Python Workshop", "Not Registered", "Not Entered"],
+        ["E103", "Arjun", "Python Workshop", "Registered", "Not Entered"],
         ["E104", "Sneha", "Python Workshop", "Registered", "Not Entered"],
-        ["E105", "Kiran", "Python Workshop", "Registered", "Not Entered"]
-    ], dtype=str)
+        ["E105", "Kiran", "Python Workshop", "Not Registered", "Not Entered"],
+        ["E106", "Anjali", "Python Workshop", "Registered", "Not Entered"],
+        ["E107", "Vijay", "Python Workshop", "Registered", "Not Entered"],
+        ["E108", "Meena", "Python Workshop", "Registered", "Not Entered"],
+        ["E109", "Ravi", "Python Workshop", "Not Registered", "Not Entered"],
+        ["E110", "Divya", "Python Workshop", "Registered", "Not Entered"]
+    ])
+
+    return participants
+
+
+# =====================================================
+# GENERATE QR CODE
+# =====================================================
 
 def generate_qr(participant_id):
-    """Generate QR code as PNG bytes."""
-    
+
+    """Generate a QR code as PNG bytes."""
+
     qr = qrcode.make(str(participant_id))
 
+    # Convert PIL image to PNG bytes
     buffer = BytesIO()
-    qr.save(buffer, format="PNG")
+
+    qr.save(
+        buffer,
+        format="PNG"
+    )
 
     return buffer.getvalue()
 
 
-def decode_qr(uploaded_file):
-    """Decode a QR code from an uploaded/captured image."""
-    if uploaded_file is None:
+# =====================================================
+# DECODE QR CODE
+# =====================================================
+
+def decode_qr(image_file):
+
+    """
+    Decode a QR code from a camera image or uploaded image.
+
+    Uses OpenCV QRCodeDetector instead of pyzbar.
+    """
+
+    try:
+
+        # Read uploaded/camera image bytes
+        image_bytes = image_file.getvalue()
+
+        # Convert bytes to NumPy array
+        image_array = np.frombuffer(
+            image_bytes,
+            np.uint8
+        )
+
+        # Decode image using OpenCV
+        image = cv2.imdecode(
+            image_array,
+            cv2.IMREAD_COLOR
+        )
+
+        if image is None:
+            return None
+
+        # Create QR detector
+        detector = cv2.QRCodeDetector()
+
+        # Detect and decode QR code
+        scanned_id, points, _ = detector.detectAndDecode(image)
+
+        # Check result
+        if scanned_id:
+
+            return scanned_id.strip()
+
         return None
 
-    image_bytes = uploaded_file.getvalue()
-    image = Image.open(BytesIO(image_bytes)).convert("RGB")
-    image_array = np.array(image)
+    except Exception:
 
-    # Convert RGB image to BGR for OpenCV
-    frame = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
-
-    results = decode(frame)
-
-    if len(results) == 0:
         return None
 
-    return results[0].data.decode("utf-8").strip()
 
-
-def find_participant(participants, participant_id):
-    """Find a participant using NumPy Boolean masking."""
-    matching_rows = participants[participants[:, 0] == str(participant_id)]
-
-    if matching_rows.size == 0:
-        return None
-
-    return matching_rows[0]
-
+# =====================================================
+# VERIFY ENTRY
+# =====================================================
 
 def verify_entry(participants, scanned_id):
-    """
-    Verify the scanned participant.
-    Returns a result dictionary containing status and participant data.
-    """
-    participant = find_participant(participants, scanned_id)
 
-    if participant is None:
+    """
+    Verify participant registration and entry status.
+    """
+
+    # Find participant
+    matching_rows = participants[
+        participants[:, 0] == scanned_id
+    ]
+
+    # Participant not found
+    if len(matching_rows) == 0:
+
         return {
             "result": "invalid",
-            "participant": None,
-            "message": "Invalid ID. Entry Denied."
+            "participant": None
         }
 
-    if participant[3] != "Registered":
+    # Get participant
+    participant = matching_rows[0]
+
+    registration = participant[3]
+    entry_status = participant[4]
+
+    # Check registration
+    if registration != "Registered":
+
         return {
             "result": "not_registered",
-            "participant": participant,
-            "message": "Participant is not registered. Entry Denied."
+            "participant": participant
         }
 
-    if participant[4] == "Entered":
+    # Check duplicate entry
+    if entry_status == "Entered":
+
         return {
             "result": "already_entered",
-            "participant": participant,
-            "message": "QR already used. Duplicate entry denied."
+            "participant": participant
         }
 
+    # Entry allowed
     return {
         "result": "allowed",
-        "participant": participant,
-        "message": "Registration verified. Entry Allowed."
+        "participant": participant
     }
 
 
-def mark_entry(participants, participant_id):
-    """Update the entry status to Entered."""
-    mask = participants[:, 0] == str(participant_id)
-    participants[mask, 4] = "Entered"
-    return participants
+# =====================================================
+# MARK ENTRY
+# =====================================================
 
+def mark_entry(participants, scanned_id):
 
-def get_participant_names(participants):
-    """Return participant IDs and names for the QR generator."""
-    return participants[:, 0] + " - " + participants[:, 1]
+    """
+    Update participant entry status to Entered.
+    """
+
+    # Create a copy so the original array
+    # is not modified unexpectedly
+    updated_participants = participants.copy()
+
+    # Find matching participant
+    matching_rows = (
+        updated_participants[:, 0] == scanned_id
+    )
+
+    # Update entry status
+    updated_participants[
+        matching_rows,
+        4
+    ] = "Entered"
+
+    return updated_participants
